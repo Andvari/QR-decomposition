@@ -19,12 +19,17 @@ void  makeHouseholder(float **, float **, int);
 float makeNorma(float **, int, int);
 float sign(float);
 void mult_matrix(float **, float **, float **, int);
+void makeSolve(float **, float *, float *, int);
 
 int main(void) {
 	FILE *f;
 	float **A;
 	float **Q;
+	float **Qt;
 	float **R;
+	float *b;
+	float *y;
+	float *x;
 	int i, j;
 	int N;
 
@@ -33,11 +38,16 @@ int main(void) {
 
 	A = (float **)malloc(N*sizeof(float *));
 	Q = (float **)malloc(N*sizeof(float *));
+	Qt = (float **)malloc(N*sizeof(float *));
 	R = (float **)malloc(N*sizeof(float *));
+	b = (float *)malloc(N*sizeof(float *));
+	y = (float *)malloc(N*sizeof(float *));
+	x = (float *)malloc(N*sizeof(float *));
 
 	for(i=0 ; i<N; i++){
 		A[i] = (float *)malloc(N * sizeof(float));
 		Q[i] = (float *)malloc(N * sizeof(float));
+		Qt[i] = (float *)malloc(N * sizeof(float));
 		R[i] = (float *)malloc(N * sizeof(float));
 	}
 
@@ -47,22 +57,66 @@ int main(void) {
 		}
 	}
 
+	for(j=0; j<N; j++){
+		fscanf(f, "%f", &b[j]);
+	}
+
 	print_matrix("A", A, N, N);
 
-	makeHouseholder(A, Q, N);
+	print_vector("b", b, N);
 
-	print_matrix("R", A, N, N);
+	for(i=0; i<N; i++){
+		for(j=0; j<N; j++){
+			R[i][j] = A[i][j];
+		}
+	}
 
-	print_matrix("Q", Q, N, N);
-
-	mult_matrix(Q, A, R, N);
+	makeHouseholder(R, Q, N);
 
 	print_matrix("R", R, N, N);
 
+	print_matrix("Q", Q, N, N);
+
+	for(i=0; i<N; i++){
+		for(j=0; j<N; j++){
+			Qt[i][j] = Q[j][i];
+		}
+	}
+
+	for(i=0; i<N; i++){
+		y[i] = 0;
+		for(j=0; j<N; j++){
+			y[i] += Qt[i][j]*b[j];
+		}
+	}
+
+	makeSolve(R, x, y, N);
+
+	print_vector("X", x, N);
+
+	for(i=0; i<N; i++){
+		y[i] = 0;
+		for(j=0; j<N; j++){
+			y[i] += A[i][j]*x[j];
+		}
+	}
+
+	print_vector("test", y, N);
+
+
 	for(i=0; i<N; i++){
 		free(A[i]);
+		free(Q[i]);
+		free(Qt[i]);
+		free(R[i]);
 	}
 	free(A);
+	free(Q);
+	free(Qt);
+	free(R);
+	free(b);
+	free(y);
+	free(x);
 	fclose(f);
 }
 
@@ -91,19 +145,6 @@ void print_vector(char *name, float *A, int n){
 	printf("\n\n");
 
 }
-
-void makeV(float **A, float *V, int N){
-	int i;
-	float norma;
-
-	norma = makeNorma(A, 0, N);
-
-	V[0] = A[0][0] + sign(A[0][0])*norma;
-	for(i=1; i<N; i++){
-		V[i] = A[i][0];
-	}
-}
-
 
 void makeHouseholder(float **A, float **Q, int N){
 	int i, j, k;
@@ -216,4 +257,18 @@ void mult_matrix(float **A, float **B, float **C, int N){
 			}
 		}
 	}
+}
+
+void makeSolve(float **R, float *x, float *y, int N){
+	int i, j;
+	float sum;
+
+	for(i=N-1; i>=0; i--){
+		sum = 0;
+		for(j=i+1; j<N; j++){
+			sum += R[i][j]*x[j];
+		}
+		x[i] = (y[i] - sum)/R[i][i];
+	}
+
 }
